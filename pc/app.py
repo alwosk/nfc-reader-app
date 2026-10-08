@@ -8,7 +8,7 @@ import subprocess
 import sys
 import threading
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import filedialog, messagebox, ttk
 from runtime import Receiver, data_folder
 
 DATA = data_folder()
@@ -50,7 +50,7 @@ class App:
         self.messages = queue.Queue()
         self.receiver = Receiver(DATA)
         root.title('근태 수신기')
-        root.geometry('660x580')
+        root.geometry('680x660')
         root.protocol('WM_DELETE_WINDOW', root.withdraw)
         box = ttk.Frame(root, padding=22)
         box.pack(fill='both', expand=True)
@@ -75,6 +75,12 @@ class App:
         ttk.Separator(box).pack(fill='x', pady=12)
         ttk.Button(box, text='단말에 지금 전송 요청', command=self.request).pack(fill='x', pady=4)
         ttk.Button(box, text='근태 엑셀 폴더 열기', command=self.open_folder).pack(fill='x', pady=4)
+        ttk.Label(box, text='엑셀 저장 폴더').pack(anchor='w', pady=(10, 2))
+        self.excel_path = tk.StringVar(value=str(self.receiver.excel_folder))
+        path_row = ttk.Frame(box)
+        path_row.pack(fill='x')
+        ttk.Entry(path_row, textvariable=self.excel_path, state='readonly').pack(side='left', fill='x', expand=True)
+        ttk.Button(path_row, text='폴더 변경', command=self.change_folder).pack(side='right', padx=(8, 0))
         startup_dir = Path(os.environ['APPDATA']) / 'Microsoft/Windows/Start Menu/Programs/Startup'
         self.autostart = tk.BooleanVar(value=(startup_dir / 'Attendance Receiver.lnk').exists())
         ttk.Checkbutton(box, text='Windows 로그인 시 백그라운드 자동 실행',
@@ -135,9 +141,24 @@ class App:
         self.status.set('전송 요청을 저장했습니다. 단말이 연결되면 처리합니다.')
 
     def open_folder(self):
-        folder = DATA / '엑셀'
-        folder.mkdir(exist_ok=True)
-        os.startfile(folder)
+        try:
+            folder = self.receiver.excel_folder
+            folder.mkdir(parents=True, exist_ok=True)
+            os.startfile(folder)
+        except OSError as e:
+            messagebox.showerror('폴더 열기 실패', f'저장 폴더 연결과 권한을 확인하세요.\n{e}')
+
+    def change_folder(self):
+        destination = filedialog.askdirectory(title='근태 엑셀 저장 폴더 선택',
+                                               initialdir=str(self.receiver.excel_folder), mustexist=True)
+        if not destination:
+            return
+        try:
+            self.receiver.set_excel_folder(destination)
+            self.excel_path.set(str(self.receiver.excel_folder))
+            messagebox.showinfo('저장 폴더 변경', '선택한 폴더에 전체 근태 엑셀을 자동 생성합니다.\n기존 폴더의 파일은 그대로 남습니다.')
+        except OSError as e:
+            messagebox.showerror('폴더 변경 실패', f'쓰기 가능한 폴더를 선택하세요.\n{e}')
 
     def set_startup(self):
         script = Path(__file__).with_name('enable-startup.ps1')

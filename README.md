@@ -2,16 +2,22 @@
 
 직원별 NFC 스티커를 공용폰에 찍어 출퇴근을 기록하고, Tailscale로 Windows PC에 전송합니다. 직원 폰용 앱과 웹 관리자 페이지는 없습니다.
 
-## 다운로드 · v0.2.0
+## 다운로드 · v0.3.0
 
 비공개 저장소에서 **Code → Download ZIP**으로 전체를 받거나 아래 파일을 다운로드하세요.
 
-- [공용폰 설치용 APK](dist/attendance-v0.2.0.apk)
-- [Windows 근태 수신기](dist/windows-receiver-v0.2.0.zip) — Python 3.12 이상, 3.14 지원. `install.cmd` → `start.cmd`
+- [공용폰 설치용 APK](dist/attendance-v0.3.0.apk)
+- [Windows 근태 수신기](dist/windows-receiver-v0.3.0.zip) — Python 3.12 이상, 3.14 지원. `install.cmd` → `start.cmd`
 - [직원용 설명서 PDF](dist/employee-guide.pdf) / [Typst 원본](docs/employee.typ)
 - [관리자용 설명서 PDF](dist/admin-guide.pdf) / [Typst 원본](docs/admin.typ)
 
 ## 이번 변경
+
+- 참고 이미지에 맞춘 **검은 배경·흰 테두리·큰 출근/퇴근 버튼**. 태그 안내와 결과는 버튼 아래에 표시합니다.
+- 우측 상단 **☰ 메뉴**를 열면 PC 전송, 관리자, 미전송 건수와 PC 연결 상태가 나타납니다.
+- PC 설정의 **엑셀 저장 폴더 → 폴더 변경**으로 저장 위치를 바꿉니다. 재시작 후에도 유지되며 전체 기록을 새 위치에 생성합니다. 이전 파일과 DB는 그대로 둡니다.
+
+## 기존 기능
 
 - 긴 연결 암호 대신 **5분간 유효한 숫자 6자리 일회용 코드**를 입력합니다. 이후 연결은 자동입니다. 5번 틀리면 새 코드를 발급해야 합니다.
 - 앱·화면·문서의 특정 기기 모델명 표기를 없앴습니다. 앱 이름은 **출퇴근**, PC 프로그램은 **근태 수신기**입니다.

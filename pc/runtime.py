@@ -3,6 +3,7 @@ import json
 import os
 import secrets
 import threading
+import tempfile
 from pathlib import Path
 from core import Pairing, Server, Store, tailscale_ip
 
@@ -28,6 +29,24 @@ class Receiver:
         self.export_status = ''
         self.stop_event = threading.Event()
         self.worker = None
+
+    @property
+    def excel_folder(self):
+        return Path(self.config.get('excel_folder') or self.store.folder / '엑셀')
+
+    def set_excel_folder(self, folder):
+        destination = Path(folder).expanduser().resolve()
+        destination.mkdir(parents=True, exist_ok=True)
+        # Validate write access without touching any user file.
+        with tempfile.TemporaryFile(dir=destination) as probe:
+            probe.write(b'check')
+            probe.flush()
+        with self.lock:
+            updated = dict(self.config, excel_folder=str(destination))
+            tmp = self.path.with_suffix('.tmp')
+            tmp.write_text(json.dumps(updated), encoding='utf-8')
+            os.replace(tmp, self.path)
+            self.config = updated
 
     def configure(self, host):
         if not tailscale_ip(host):
@@ -55,10 +74,10 @@ class Receiver:
             if self.server:
                 self.status = '백그라운드 수신 중'
         try:
-            self.store.export()
+            self.store.export(self.excel_folder)
             self.export_status = ''
         except Exception:
-            self.export_status = '엑셀 갱신 대기 · 열어둔 근태 엑셀을 닫으면 자동 갱신됩니다.'
+            self.export_status = '엑셀 갱신 대기 · 저장 폴더 연결·권한과 열려 있는 파일을 확인하세요.'
 
     def run(self):
         while not self.stop_event.is_set():

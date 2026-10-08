@@ -112,7 +112,8 @@ class Store:
         try: wb.save(name); os.replace(name, path)
         finally:
             if os.path.exists(name): os.unlink(name)
-    def export(self):
+    def export(self, folder=None):
+        destination = Path(folder) if folder is not None else self.folder / '엑셀'
         with self.export_lock:
             rows = self.rows(); months = sorted({r['time'][:7] for r in rows})
             outputs = []
@@ -122,7 +123,7 @@ class Store:
                 for idx,r in enumerate((r for r in rows if r['time'].startswith(month)),2): self.cell_row(ws,idx,self.values(r))
                 ws.freeze_panes='A2'; ws.auto_filter.ref=ws.dimensions
                 for col,width in [('A',24),('B',25),('C',24)]: ws.column_dimensions[col].width=width
-                path=self.folder/'엑셀'/f'근태기록_{month}.xlsx'; self.save_atomic(wb,path); outputs.append(path)
+                path=destination/f'근태기록_{month}.xlsx'; self.save_atomic(wb,path); outputs.append(path)
             self.export_error=''
             return outputs
     def export_template(self, template, destination, sheet, start_row, columns, month):

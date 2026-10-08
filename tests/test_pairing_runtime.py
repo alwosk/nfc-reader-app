@@ -89,3 +89,32 @@ class RuntimeTests(unittest.TestCase):
 
 
 if __name__ == '__main__': unittest.main()
+
+class ExcelFolderTests(unittest.TestCase):
+    def test_new_folder_persists_recreates_history_and_preserves_old_files(self):
+        with tempfile.TemporaryDirectory() as folder:
+            receiver = Receiver(Path(folder) / 'data')
+            receiver.store.receive([dict(id='1', employee_id='e', name='직원',
+                time='2026-10-08T09:00:00+09:00', kind='출근', revision=1, reason='')])
+            receiver.tick()
+            old_file = receiver.excel_folder / '근태기록_2026-10.xlsx'
+            old_bytes = old_file.read_bytes()
+            target = Path(folder) / '새 폴더'
+            receiver.set_excel_folder(target)
+            receiver.tick()
+            self.assertTrue((target / old_file.name).exists())
+            self.assertEqual(old_file.read_bytes(), old_bytes)
+            reopened = Receiver(Path(folder) / 'data')
+            self.assertEqual(reopened.excel_folder, target.resolve())
+            self.assertEqual(len(reopened.store.rows()), 1)
+
+    def test_invalid_folder_does_not_replace_saved_setting(self):
+        with tempfile.TemporaryDirectory() as folder:
+            receiver = Receiver(Path(folder) / 'data')
+            receiver.set_excel_folder(Path(folder) / 'valid')
+            bad = Path(folder) / 'file'
+            bad.write_text('unchanged')
+            with self.assertRaises(OSError):receiver.set_excel_folder(bad)
+            reopened = Receiver(Path(folder) / 'data')
+            self.assertEqual(reopened.excel_folder, (Path(folder) / 'valid').resolve())
+            self.assertEqual(bad.read_text(), 'unchanged')

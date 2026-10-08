@@ -2,7 +2,13 @@ package kr.attendance.q52;
 
 import android.app.*;
 import android.content.*;
+import android.content.res.ColorStateList;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.nfc.*;
 import android.os.*;
 import android.text.InputType;
@@ -15,10 +21,13 @@ import java.util.*;
 public class MainActivity extends Activity implements NfcAdapter.ReaderCallback {
   private Store db;
   private NfcAdapter nfc;
-  private LinearLayout layout;
+  private LinearLayout layout, menuPanel;
+  private Button arrivalButton, departureButton;
+  private View menuToggle;
+  private static final int BACKGROUND = Color.rgb(32, 32, 32);
   private TextView result, state;
   private String selection = null, registration = null;
-  private long selectedAt = 0, lastTagAt = 0, lockedUntil = 0;
+  private long selectedAt = 0, lastTagAt = -1500, lockedUntil = 0;
   private int failures = 0;
   private boolean adminOpen = false;
   private final Handler handler = new Handler();
@@ -29,8 +38,12 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
             state.setText(
                 "미전송 "
                     + db.pendingCount()
-                    + "건 · "
+                    + "건\nPC 연결 상태 · "
                     + (SyncService.running ? SyncService.status : "연결 중지됨"));
+          if (selection != null && SystemClock.elapsedRealtime() - selectedAt >= 30000) {
+            selection = null;
+            message("선택 시간이 지났습니다. 다시 선택하세요.");
+          }
           handler.postDelayed(this, 2000);
         }
       };
@@ -50,58 +63,199 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
       startForegroundService(new Intent(this, SyncService.class));
   }
 
+  private int dp(int value) {
+    return Math.round(value * getResources().getDisplayMetrics().density);
+  }
+
+  private GradientDrawable outline(int fill, int width) {
+    GradientDrawable drawable = new GradientDrawable();
+    drawable.setColor(fill);
+    drawable.setCornerRadius(dp(3));
+    drawable.setStroke(dp(width), Color.WHITE);
+    return drawable;
+  }
+
+  private TextView label(String value, int size) {
+    TextView text = new TextView(this);
+    text.setText(value);
+    text.setTextColor(Color.WHITE);
+    text.setTextSize(size);
+    return text;
+  }
+
   private void home() {
+    getWindow().setStatusBarColor(BACKGROUND);
+    getWindow().setNavigationBarColor(BACKGROUND);
+    getWindow().getDecorView().setSystemUiVisibility(0);
+    FrameLayout screen = new FrameLayout(this);
+    screen.setBackgroundColor(BACKGROUND);
     layout = new LinearLayout(this);
     layout.setOrientation(LinearLayout.VERTICAL);
-    layout.setPadding(28, 28, 28, 28);
-    layout.setBackgroundColor(Color.rgb(244, 247, 252));
+    layout.setBackground(outline(BACKGROUND, 4));
+    layout.setPadding(dp(4), dp(4), dp(4), dp(4));
+    FrameLayout.LayoutParams border = new FrameLayout.LayoutParams(-1, -1);
+    border.setMargins(dp(20), dp(16), dp(20), dp(16));
+    screen.addView(layout, border);
+    setContentView(screen);
+
+    LinearLayout header = new LinearLayout(this);
+    header.setGravity(Gravity.CENTER_VERTICAL);
+    header.setPadding(dp(14), 0, dp(8), 0);
+    TextView title = label("출퇴근", 23);
+    title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+    header.addView(title, new LinearLayout.LayoutParams(0, dp(58), 1));
+    title.setGravity(Gravity.CENTER_VERTICAL);
+    menuToggle =
+        new View(this) {
+          private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+          @Override
+          protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            paint.setColor(Color.WHITE);
+            paint.setStrokeWidth(dp(3));
+            paint.setStrokeCap(Paint.Cap.ROUND);
+            float center = getHeight() / 2f;
+            for (int offset = -1; offset <= 1; offset++)
+              canvas.drawLine(
+                  dp(12),
+                  center + dp(8) * offset,
+                  getWidth() - dp(12),
+                  center + dp(8) * offset,
+                  paint);
+          }
+        };
+    menuToggle.setContentDescription("메뉴 열기");
+    menuToggle.setBackground(
+        new RippleDrawable(ColorStateList.valueOf(0x44FFFFFF), null, outline(Color.WHITE, 0)));
+    menuToggle.setOnClickListener(v -> toggleMenu());
+    menuToggle.setFocusable(true);
+    header.addView(menuToggle, new LinearLayout.LayoutParams(dp(48), dp(48)));
+    layout.addView(header);
+    View divider = new View(this);
+    divider.setBackgroundColor(Color.WHITE);
+    layout.addView(divider, new LinearLayout.LayoutParams(-1, dp(4)));
+
+    FrameLayout body = new FrameLayout(this);
+    layout.addView(body, new LinearLayout.LayoutParams(-1, 0, 1));
     ScrollView scroll = new ScrollView(this);
-    scroll.addView(layout);
-    setContentView(scroll);
-    TextView title = text("출퇴근", 30);
-    title.setTextColor(Color.rgb(25, 57, 95));
-    text("출근 또는 퇴근을 선택한 뒤\n등록된 NFC 스티커를 대주세요.", 20);
-    button("출근", () -> select("출근"));
-    button("퇴근", () -> select("퇴근"));
-    result = text("태그 대기", 24);
-    state = text("", 14);
-    button(
+    scroll.setFillViewport(true);
+    scroll.setVerticalScrollBarEnabled(false);
+    body.addView(scroll, new FrameLayout.LayoutParams(-1, -1));
+    LinearLayout actions = new LinearLayout(this);
+    actions.setOrientation(LinearLayout.VERTICAL);
+    actions.setPadding(dp(18), dp(16), dp(18), dp(8));
+    actions.setMinimumHeight(dp(400));
+    scroll.addView(actions, new ScrollView.LayoutParams(-1, -1));
+    arrivalButton = attendanceButton("출근");
+    departureButton = attendanceButton("퇴근");
+    LinearLayout.LayoutParams arrival = new LinearLayout.LayoutParams(-1, 0, 1);
+    arrival.bottomMargin = dp(18);
+    actions.addView(arrivalButton, arrival);
+    actions.addView(departureButton, new LinearLayout.LayoutParams(-1, 0, 1));
+    result = label("출근 또는 퇴근을 선택하세요.", 18);
+    result.setGravity(Gravity.CENTER);
+    result.setPadding(0, dp(12), 0, dp(4));
+    result.setMinHeight(dp(84));
+    result.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+    actions.addView(result, new LinearLayout.LayoutParams(-1, -2));
+
+    menuPanel = new LinearLayout(this);
+    menuPanel.setOrientation(LinearLayout.VERTICAL);
+    menuPanel.setPadding(dp(14), dp(12), dp(14), dp(14));
+    menuPanel.setBackground(outline(BACKGROUND, 2));
+    menuPanel.setElevation(dp(12));
+    menuPanel.setVisibility(View.GONE);
+    menuPanel.setClickable(true);
+    state = label("", 16);
+    state.setPadding(dp(4), dp(4), dp(4), dp(12));
+    menuPanel.addView(state);
+    menuButton(
         "PC로 지금 전송",
         () -> {
           startForegroundService(new Intent(this, SyncService.class).setAction("SEND"));
-          message("전송을 요청했습니다. 아래 상태를 확인하세요.");
+          message("PC로 전송을 요청했습니다.");
         });
-    button("관리자", this::login);
+    menuButton(
+        "관리자",
+        () -> {
+          closeMenu();
+          login();
+        });
+    FrameLayout.LayoutParams panel = new FrameLayout.LayoutParams(-1, -2, Gravity.TOP);
+    panel.setMargins(dp(10), dp(8), dp(10), 0);
+    body.addView(menuPanel, panel);
     if (nfc == null) message("이 기기는 NFC를 지원하지 않습니다.");
     else if (!nfc.isEnabled()) message("설정에서 NFC를 켜주세요.");
   }
 
-  private TextView text(String s, int size) {
-    TextView t = new TextView(this);
-    t.setText(s);
-    t.setTextSize(size);
-    t.setPadding(0, 16, 0, 16);
-    layout.addView(t);
-    return t;
+  private Button attendanceButton(String title) {
+    Button button = new Button(this);
+    button.setText(title);
+    button.setTextColor(Color.WHITE);
+    button.setTextSize(52);
+    button.setAllCaps(false);
+    button.setGravity(Gravity.CENTER);
+    button.setPadding(dp(8), dp(8), dp(8), dp(8));
+    button.setMinimumHeight(dp(120));
+    button.setAutoSizeTextTypeUniformWithConfiguration(
+        32, 52, 2, android.util.TypedValue.COMPLEX_UNIT_SP);
+    button.setBackground(outline(BACKGROUND, 4));
+    button.setOnClickListener(v -> select(title));
+    return button;
   }
 
-  private void button(String s, Runnable r) {
-    Button b = new Button(this);
-    b.setText(s);
-    b.setTextSize(20);
-    b.setMinHeight(76);
-    layout.addView(b);
-    b.setOnClickListener(v -> r.run());
+  private void menuButton(String text, Runnable action) {
+    Button button = new Button(this);
+    button.setText(text);
+    button.setTextColor(Color.WHITE);
+    button.setTextSize(18);
+    button.setBackground(outline(BACKGROUND, 1));
+    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, dp(52));
+    params.topMargin = dp(8);
+    menuPanel.addView(button, params);
+    button.setOnClickListener(v -> action.run());
+  }
+
+  private void toggleMenu() {
+    if (menuPanel.getVisibility() == View.VISIBLE) {
+      closeMenu();
+      return;
+    }
+    selection = null;
+    message("출근 또는 퇴근을 선택하세요.");
+    menuPanel.setVisibility(View.VISIBLE);
+    menuToggle.setContentDescription("메뉴 닫기");
+  }
+
+  private void closeMenu() {
+    menuPanel.setVisibility(View.GONE);
+    menuToggle.setContentDescription("메뉴 열기");
+  }
+
+  @Override
+  public void onBackPressed() {
+    if (menuPanel.getVisibility() == View.VISIBLE) closeMenu();
+    else super.onBackPressed();
   }
 
   private void select(String s) {
+    closeMenu();
     selection = s;
-    selectedAt = System.currentTimeMillis();
-    message(s + " 선택됨 · 30초 이내 태그하세요.");
+    selectedAt = SystemClock.elapsedRealtime();
+    message(s + " 선택됨\n30초 이내 태그하세요.");
   }
 
   private void message(String s) {
     result.setText(s);
+    if (arrivalButton != null) {
+      arrivalButton.setSelected("출근".equals(selection));
+      arrivalButton.setBackground(
+          outline(arrivalButton.isSelected() ? Color.rgb(60, 60, 60) : BACKGROUND, 4));
+      departureButton.setSelected("퇴근".equals(selection));
+      departureButton.setBackground(
+          outline(departureButton.isSelected() ? Color.rgb(60, 60, 60) : BACKGROUND, 4));
+    }
   }
 
   protected void onResume() {
@@ -137,7 +291,7 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
             message("고정 식별값이 없는 태그입니다.");
             return;
           }
-          long now = System.currentTimeMillis();
+          long now = SystemClock.elapsedRealtime();
           if (now - lastTagAt < 1500) return;
           lastTagAt = now;
           try {
@@ -190,7 +344,7 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
 
   private void login() {
     selection = null;
-    if (System.currentTimeMillis() < lockedUntil) {
+    if (SystemClock.elapsedRealtime() < lockedUntil) {
       message("PIN 오류가 반복되어 30초 후 다시 시도하세요.");
       return;
     }
@@ -221,7 +375,7 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
                   .equals(SyncService.prefs(this).getString("pin", ""))) {
                 failures++;
                 if (failures >= 5) {
-                  lockedUntil = System.currentTimeMillis() + 30000;
+                  lockedUntil = SystemClock.elapsedRealtime() + 30000;
                   failures = 0;
                 }
                 message("PIN이 일치하지 않습니다.");
