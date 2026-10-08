@@ -3,7 +3,7 @@
 2026-10-08 클라우드 개발 환경에서 수행했습니다.
 
 - Android `assembleDebug`: 성공. 배포 APK를 생성하고 `apksigner verify` 통과.
-- Android `lintDebug`: 오류 0건. 경고 3건(대상 API 권고, NFC 필수 기능, 한국어 문자열 구성).
+- Android `lintDebug`: 오류 0건. 경고 3건(Android 12 미만 백업 설정 권고, NFC 필수 기능, 한국어 문자열 구성).
 - Android 12(API 31) Robolectric 테스트 3건 통과: 중복 태그·출근 없는 퇴근 차단, 전송 중 정정과 이전 ACK 경합, DB 재열기·태그 해제 후 기록 보존.
 - Python 수신기 테스트 7건 통과: 중복/수정 버전, 배치 원자성, XLSX 열/시간/수식 문자열 안전성, Excel 잠금 시 DB 보존, 전송 중 새 PC 요청 보존, 타 양식 셀 매핑, HTTP 인증·수신 응답.
 - 직원용·관리자용 Typst 문서를 PDF로 컴파일하고 텍스트 추출 및 관리자 문서 시각 검토.
