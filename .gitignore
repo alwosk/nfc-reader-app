@@ -1,0 +1,11 @@
+.gradle/
+**/build/
+local.properties
+*.jks
+*.keystore
+__pycache__/
+.venv/
+*.db
+*.db-*
+config.json
+!config.example.json
