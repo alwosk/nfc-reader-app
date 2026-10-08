@@ -30,17 +30,17 @@ Q52는 스티커를 읽어 내부 SQLite 데이터베이스에 기록합니다. 
 
 = Windows 수신 프로그램 설치
 == Python 설치
-+ #link("https://www.python.org/downloads/windows/")[Python 공식 Windows 다운로드]에서 Python 3.12의 Windows installer (64-bit)를 다운로드합니다. 예: Python 3.12.10 설치 프로그램.
++ #link("https://www.python.org/downloads/windows/")[Python 공식 Windows 다운로드]에서 Python 3.14의 Windows 설치 프로그램을 다운로드합니다. Python 3.12 이상을 사용할 수 있으며, 이미 3.14가 설치되어 있으면 재설치하지 않아도 됩니다. 설치 시 Tcl/Tk 및 tkinter 구성 요소를 포함합니다.
 + 실행 후 ‘Add python.exe to PATH’를 선택하고 ‘Install Now’를 누릅니다. Python Launcher도 설치합니다.
 + 설치가 끝나면 시작 메뉴에서 ‘터미널’을 열고 아래 명령을 입력합니다.
 ```powershell
-py -3.12 --version
+py -3 --version
 ```
-`Python 3.12.x`가 표시되면 준비됐습니다. 명령을 못 찾으면 터미널을 다시 열거나 설치 프로그램에서 Launcher 설치 여부를 확인하세요.
+`Python 3.14.x`처럼 3.12 이상 버전이 표시되면 준비됐습니다. 명령을 못 찾으면 터미널을 다시 열거나 설치 프로그램에서 Launcher 설치 여부를 확인하세요.
 
 == 수신기 설치와 실행
 + 프로젝트의 `pc` 폴더를 엽니다. ZIP 내부에서 바로 실행하지 말고 먼저 압축을 풀어야 합니다.
-+ `install.cmd`를 두 번 클릭합니다. 인터넷에 연결된 상태에서 필요한 엑셀 라이브러리를 설치합니다.
++ `install.cmd`를 두 번 클릭합니다. 설치 스크립트는 `py -3`으로 설치된 Python 3을 찾고, 없으면 `python` 명령을 사용합니다. 인터넷에 연결된 상태에서 필요한 엑셀 라이브러리를 설치합니다.
 + ‘Installation complete’가 나오면 아무 키나 눌러 창을 닫습니다. 오류가 나면 마지막 오류 내용을 확인하고 다시 설치하세요.
 + `start.cmd`를 두 번 클릭합니다. ‘Q52 근태 수신기’ 창이 열립니다.
 

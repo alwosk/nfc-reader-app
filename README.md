@@ -7,7 +7,7 @@ LG Q52(Android 12)에 직원별 NFC 스티커를 찍어 기록하고, Tailscale�
 비공개 저장소에 로그인한 뒤 **Code → Download ZIP**으로 받으세요. 압축을 푼 `dist` 폴더에 설치 자료가 있습니다.
 
 - [Q52 설치용 APK (v0.1.0 시험판)](dist/q52-attendance-v0.1.0.apk)
-- [Windows PC 수신기](dist/windows-receiver-v0.1.0.zip) — Python 3.12 설치 후 `install.cmd`, `start.cmd` 순서
+- [Windows PC 수신기](dist/windows-receiver-v0.1.0.zip) — Python 3.12 이상(3.14 지원)에서 `install.cmd`, `start.cmd` 순서
 - [직원용 설명서 PDF](dist/employee-guide.pdf) / [Typst 원본](docs/employee.typ)
 - [관리자용 설명서 PDF](dist/admin-guide.pdf) / [Typst 원본](docs/admin.typ)
 
@@ -36,7 +36,7 @@ LG Q52(Android 12)에 직원별 NFC 스티커를 찍어 기록하고, Tailscale�
 ## 개발
 
 Android: JDK 17+, SDK 35, Gradle 8.13 / AGP 8.9.2. `android`에서 `./gradlew assembleDebug`.
-PC: Python 3.12, `pip install -r pc/requirements.txt`, `python pc/app.py`.
+PC: Python 3.12 이상(3.14 지원), `pip install -r pc/requirements.txt`, `python pc/app.py`.
 검증: `python -m unittest discover -s tests -v`, Android는 `./gradlew testDebugUnitTest lintDebug`.
 설명서: Noto Sans CJK KR 폰트를 설치하고 `typst compile docs/admin.typ dist/admin-guide.pdf` (직원용도 동일).
 

@@ -2,12 +2,16 @@ name: Check source
 on: [push, pull_request]
 jobs:
   receiver:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.12', '3.14']
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: ${{ matrix.python }}
       - run: pip install -r pc/requirements.txt
       - run: python -m unittest discover -s tests -v
   android:

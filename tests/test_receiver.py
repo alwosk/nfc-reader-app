@@ -49,6 +49,7 @@ class ReceiverTests(unittest.TestCase):
         opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
         with self.assertRaises(urllib.error.HTTPError) as e:opener.open(base+'/control')
         self.assertEqual(e.exception.code,401)
+        e.exception.close()
         req=urllib.request.Request(base+'/records',json.dumps({'records':[self.row]}).encode(),{'Authorization':'Bearer '+'x'*32,'Content-Type':'application/json'})
         with opener.open(req) as r:self.assertEqual(json.load(r)['accepted'],1)
         self.assertEqual(len(self.store.rows()),1)

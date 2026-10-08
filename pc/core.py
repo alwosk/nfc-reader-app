@@ -1,5 +1,6 @@
 """Durable, idempotent receiver and atomic Excel snapshots. No attendance data on GitHub."""
 from __future__ import annotations
+from contextlib import contextmanager, closing
 import hmac
 import ipaddress
 import json
@@ -34,10 +35,15 @@ class Store:
               completed INTEGER);
             INSERT OR IGNORE INTO control VALUES(1,0,0);
             ''')
+    @contextmanager
     def connect(self):
         c = sqlite3.connect(self.db, timeout=15)
         c.row_factory = sqlite3.Row
-        return c
+        try:
+            with c:
+                yield c
+        finally:
+            c.close()
     @staticmethod
     def validate(r):
         if not isinstance(r, dict): raise ValueError('record must be an object')
@@ -130,7 +136,7 @@ class Store:
         self.save_atomic(wb,destination)
         return len(rows)
     def backup(self, destination):
-        with self.connect() as src, sqlite3.connect(destination) as dst: src.backup(dst)
+        with self.connect() as src, closing(sqlite3.connect(destination)) as dst: src.backup(dst)
 
 class Server(ThreadingHTTPServer):
     daemon_threads=True
