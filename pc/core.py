@@ -1,6 +1,8 @@
 """Durable, idempotent receiver and atomic Excel snapshots. No attendance data on GitHub."""
 from __future__ import annotations
 from contextlib import contextmanager, closing
+import secrets
+import time
 import hmac
 import ipaddress
 import json
@@ -138,10 +140,31 @@ class Store:
     def backup(self, destination):
         with self.connect() as src, closing(sqlite3.connect(destination)) as dst: src.backup(dst)
 
+class Pairing:
+    """A local administrator opens a five-minute, single-use pairing window."""
+    def __init__(self, clock=time.monotonic):
+        self.clock=clock; self.lock=threading.Lock(); self.code=None; self.expires=0; self.attempts=0
+    def issue(self):
+        with self.lock:
+            self.code=f'{secrets.randbelow(1000000):06d}'; self.expires=self.clock()+300; self.attempts=0
+            return self.code
+    def consume(self, code):
+        with self.lock:
+            if self.code is None or self.clock()>=self.expires or self.attempts>=5: return False
+            self.attempts+=1
+            if not isinstance(code,str) or not hmac.compare_digest(code.encode(),self.code.encode()): return False
+            self.code=None
+            return True
+    def status(self):
+        with self.lock:
+            if self.code is None: return '연결 완료 또는 코드 미발급'
+            if self.clock()>=self.expires or self.attempts>=5: return '코드 만료 · 새 코드를 발급하세요'
+            return f'{self.code}  ·  {int(self.expires-self.clock())}초 남음'
+
 class Server(ThreadingHTTPServer):
     daemon_threads=True
-    def __init__(self, address, store, token):
-        self.store=store; self.token=token
+    def __init__(self, address, store, token, pairing=None):
+        self.store=store; self.token=token; self.pairing=pairing or Pairing()
         super().__init__(address, Handler)
 
 class Handler(BaseHTTPRequestHandler):
@@ -160,12 +183,16 @@ class Handler(BaseHTTPRequestHandler):
         if self.path!='/control': self.answer(404, {'error':'not found'}); return
         self.answer(200,self.server.store.control())
     def do_POST(self):
-        if not self.authorized(): return
+        if self.path != '/pair' and not self.authorized(): return
         try:
             n=int(self.headers.get('Content-Length','0'))
             if not 0<n<=1000000: raise ValueError('invalid size')
             body=json.loads(self.rfile.read(n))
-            if self.path=='/records': result={'accepted':self.server.store.receive(body['records'])}
+            if self.path=='/pair':
+                if not self.server.pairing.consume(body.get('code')):
+                    self.answer(403, {'error':'pairing code invalid or expired'}); return
+                result={'token':self.server.token}
+            elif self.path=='/records': result={'accepted':self.server.store.receive(body['records'])}
             elif self.path=='/complete': self.server.store.complete(body['sequence']); result={'ok':True}
             else: self.answer(404, {'error':'not found'}); return
             self.answer(200,result)

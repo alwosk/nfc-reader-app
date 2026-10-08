@@ -27,5 +27,5 @@ jobs:
         working-directory: android
       - uses: actions/upload-artifact@v4
         with:
-          name: q52-ci-debug-apk-not-for-updating-existing-install
+          name: attendance-ci-debug-apk-not-for-updating-existing-install
           path: android/app/build/outputs/apk/debug/app-debug.apk

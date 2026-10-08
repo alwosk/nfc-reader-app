@@ -54,7 +54,7 @@ public class SyncService extends Service {
     startForeground(
         1,
         new Notification.Builder(this, "sync")
-            .setContentTitle("Q52 출퇴근 연결 중")
+            .setContentTitle("출퇴근 연결 중")
             .setContentText("PC 요청 확인 및 미전송 기록 보관")
             .setSmallIcon(android.R.drawable.ic_menu_recent_history)
             .setContentIntent(pi)
@@ -66,6 +66,40 @@ public class SyncService extends Service {
   public int onStartCommand(Intent i, int flags, int id) {
     if (i != null && "SEND".equals(i.getAction())) executor.execute(() -> tick(true));
     return START_STICKY;
+  }
+
+  static String pair(String base, String code) throws Exception {
+    if (!validUrl(base) || !code.matches("[0-9]{6}")) throw new IOException("연결 정보 확인");
+    HttpURLConnection c =
+        (HttpURLConnection) new URL(base.replaceAll("/$", "") + "/pair").openConnection();
+    c.setConnectTimeout(5000);
+    c.setReadTimeout(10000);
+    c.setInstanceFollowRedirects(false);
+    c.setRequestMethod("POST");
+    c.setDoOutput(true);
+    c.setRequestProperty("Content-Type", "application/json");
+    try {
+      byte[] bytes = new JSONObject().put("code", code).toString().getBytes(StandardCharsets.UTF_8);
+      c.setFixedLengthStreamingMode(bytes.length);
+      try (OutputStream out = c.getOutputStream()) {
+        out.write(bytes);
+      }
+      if (c.getResponseCode() != 200) throw new IOException("연결 코드 확인");
+      try (InputStream in = c.getInputStream();
+          ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+        byte[] b = new byte[1024];
+        int n;
+        while ((n = in.read(b)) != -1) {
+          out.write(b, 0, n);
+          if (out.size() > 4096) throw new IOException("응답 크기 초과");
+        }
+        String token = new JSONObject(out.toString("UTF-8")).getString("token");
+        if (token.length() < 32) throw new IOException("연결 응답 확인");
+        return token;
+      }
+    } finally {
+      c.disconnect();
+    }
   }
 
   private JSONObject request(String path, JSONObject body) throws Exception {

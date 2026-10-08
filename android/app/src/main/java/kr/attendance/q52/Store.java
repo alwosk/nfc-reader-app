@@ -84,7 +84,7 @@ final class Store extends SQLiteOpenHelper {
         if (kind.equals("퇴근")
             && c.getString(0).equals("출근")
             && !now.toInstant().isAfter(OffsetDateTime.parse(c.getString(1)).toInstant()))
-          return "출근보다 이른 시각입니다. Q52 시계를 확인하세요.";
+          return "출근보다 이른 시각입니다. 단말 시계를 확인하세요.";
       }
       if ((kind.equals("출근") && entered) || (kind.equals("퇴근") && exited))
         return name + ": 오늘 " + kind + " 기록이 이미 있습니다.";

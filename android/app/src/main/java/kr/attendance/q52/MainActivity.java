@@ -58,7 +58,7 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
     ScrollView scroll = new ScrollView(this);
     scroll.addView(layout);
     setContentView(scroll);
-    TextView title = text("Q52 출퇴근", 30);
+    TextView title = text("출퇴근", 30);
     title.setTextColor(Color.rgb(25, 57, 95));
     text("출근 또는 퇴근을 선택한 뒤\n등록된 NFC 스티커를 대주세요.", 20);
     button("출근", () -> select("출근"));
@@ -106,6 +106,8 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
 
   protected void onResume() {
     super.onResume();
+    if (!SyncService.running && !SyncService.prefs(this).getString("url", "").isEmpty())
+      startForegroundService(new Intent(this, SyncService.class));
     if (nfc != null)
       nfc.enableReaderMode(
           this,
@@ -328,25 +330,61 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
 
   private void connection() {
     LinearLayout f = form();
-    EditText url =
-        field(f, "http://100.x.x.x:8765", SyncService.prefs(this).getString("url", ""), false);
-    EditText token =
-        field(f, "PC에서 생성한 연결 암호", SyncService.prefs(this).getString("token", ""), true);
+    String oldUrl = SyncService.prefs(this).getString("url", "");
+    EditText url = field(f, "http://100.x.x.x:8765", oldUrl, false);
+    EditText code = field(f, "PC에 표시된 숫자 6자리", "", false);
+    code.setInputType(InputType.TYPE_CLASS_NUMBER);
+    code.setFilters(new android.text.InputFilter[] {new android.text.InputFilter.LengthFilter(6)});
     new AlertDialog.Builder(this)
-        .setTitle("Tailscale PC 연결")
-        .setMessage("PC 수신 프로그램의 주소와 연결 암호를 입력하세요.")
+        .setTitle("PC 연결")
+        .setMessage("PC 수신기의 ‘새 연결 코드’를 누르고 숫자 6자리를 입력하세요. 이미 연결된 PC라면 코드를 비워두어도 됩니다.")
         .setView(f)
         .setNegativeButton("취소", null)
         .setPositiveButton(
-            "저장 및 연결",
+            "연결",
             (d, w) -> {
-              String u = url.getText().toString().trim(), t = token.getText().toString().trim();
-              if (!SyncService.validUrl(u) || t.length() < 32) {
-                message("Tailscale IPv4 주소와 32자 이상 연결 암호를 확인하세요.");
+              String u = url.getText().toString().trim(), c = code.getText().toString().trim();
+              if (!SyncService.validUrl(u)) {
+                message("PC의 Tailscale 주소를 확인하세요.");
                 return;
               }
-              SyncService.prefs(this).edit().putString("url", u).putString("token", t).apply();
-              startForegroundService(new Intent(this, SyncService.class).setAction("SEND"));
+              if (c.isEmpty()
+                  && u.equals(oldUrl)
+                  && !SyncService.prefs(this).getString("token", "").isEmpty()) {
+                startForegroundService(new Intent(this, SyncService.class).setAction("SEND"));
+                return;
+              }
+              if (!c.matches("[0-9]{6}")) {
+                message("PC에 표시된 숫자 6자리를 입력하세요.");
+                return;
+              }
+              message("PC에 연결 중…");
+              new Thread(
+                      () -> {
+                        try {
+                          String token = SyncService.pair(u, c);
+                          runOnUiThread(
+                              () -> {
+                                SyncService.prefs(this)
+                                    .edit()
+                                    .putString("url", u)
+                                    .putString("token", token)
+                                    .apply();
+                                if (!isFinishing() && !isDestroyed() && hasWindowFocus()) {
+                                  startForegroundService(
+                                      new Intent(this, SyncService.class).setAction("SEND"));
+                                  message("PC 연결 완료. 다음부터 자동으로 연결됩니다.");
+                                }
+                              });
+                        } catch (Exception e) {
+                          runOnUiThread(
+                              () -> {
+                                if (!isDestroyed())
+                                  message("연결 실패. PC 주소·Tailscale 연결을 확인하고 새 코드를 발급해 다시 입력하세요.");
+                              });
+                        }
+                      })
+                  .start();
             })
         .show();
   }
