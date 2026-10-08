@@ -24,7 +24,10 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
   private LinearLayout layout, menuPanel;
   private Button arrivalButton, departureButton;
   private View menuToggle;
-  private static final int BACKGROUND = Color.rgb(32, 32, 32);
+  private static final int BACKGROUND = Color.rgb(245, 247, 251);
+  private static final int INK = Color.rgb(31, 41, 55);
+  private static final int BLUE = Color.rgb(37, 99, 235);
+  private static final int RED = Color.rgb(220, 38, 38);
   private TextView result, state;
   private String selection = null, registration = null;
   private long selectedAt = 0, lastTagAt = -1500, lockedUntil = 0;
@@ -67,40 +70,41 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
     return Math.round(value * getResources().getDisplayMetrics().density);
   }
 
-  private GradientDrawable outline(int fill, int width) {
+  private GradientDrawable surface(int fill, int stroke, int width) {
     GradientDrawable drawable = new GradientDrawable();
     drawable.setColor(fill);
-    drawable.setCornerRadius(dp(3));
-    drawable.setStroke(dp(width), Color.WHITE);
+    drawable.setCornerRadius(dp(16));
+    drawable.setStroke(dp(width), stroke);
     return drawable;
   }
 
   private TextView label(String value, int size) {
     TextView text = new TextView(this);
     text.setText(value);
-    text.setTextColor(Color.WHITE);
+    text.setTextColor(INK);
     text.setTextSize(size);
     return text;
   }
 
   private void home() {
-    getWindow().setStatusBarColor(BACKGROUND);
+    getWindow().setStatusBarColor(Color.WHITE);
     getWindow().setNavigationBarColor(BACKGROUND);
-    getWindow().getDecorView().setSystemUiVisibility(0);
+    getWindow()
+        .getDecorView()
+        .setSystemUiVisibility(
+            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
     FrameLayout screen = new FrameLayout(this);
     screen.setBackgroundColor(BACKGROUND);
     layout = new LinearLayout(this);
     layout.setOrientation(LinearLayout.VERTICAL);
-    layout.setBackground(outline(BACKGROUND, 4));
-    layout.setPadding(dp(4), dp(4), dp(4), dp(4));
-    FrameLayout.LayoutParams border = new FrameLayout.LayoutParams(-1, -1);
-    border.setMargins(dp(20), dp(16), dp(20), dp(16));
-    screen.addView(layout, border);
+    layout.setBackgroundColor(BACKGROUND);
+    screen.addView(layout, new FrameLayout.LayoutParams(-1, -1));
     setContentView(screen);
 
     LinearLayout header = new LinearLayout(this);
     header.setGravity(Gravity.CENTER_VERTICAL);
-    header.setPadding(dp(14), 0, dp(8), 0);
+    header.setPadding(dp(20), 0, dp(12), 0);
+    header.setBackgroundColor(Color.WHITE);
     TextView title = label("출퇴근", 23);
     title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
     header.addView(title, new LinearLayout.LayoutParams(0, dp(58), 1));
@@ -112,7 +116,7 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
           @Override
           protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
-            paint.setColor(Color.WHITE);
+            paint.setColor(INK);
             paint.setStrokeWidth(dp(3));
             paint.setStrokeCap(Paint.Cap.ROUND);
             float center = getHeight() / 2f;
@@ -127,14 +131,15 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
         };
     menuToggle.setContentDescription("메뉴 열기");
     menuToggle.setBackground(
-        new RippleDrawable(ColorStateList.valueOf(0x44FFFFFF), null, outline(Color.WHITE, 0)));
+        new RippleDrawable(
+            ColorStateList.valueOf(0x180F172A), null, surface(Color.WHITE, Color.WHITE, 0)));
     menuToggle.setOnClickListener(v -> toggleMenu());
     menuToggle.setFocusable(true);
     header.addView(menuToggle, new LinearLayout.LayoutParams(dp(48), dp(48)));
     layout.addView(header);
     View divider = new View(this);
-    divider.setBackgroundColor(Color.WHITE);
-    layout.addView(divider, new LinearLayout.LayoutParams(-1, dp(4)));
+    divider.setBackgroundColor(Color.rgb(226, 232, 240));
+    layout.addView(divider, new LinearLayout.LayoutParams(-1, dp(1)));
 
     FrameLayout body = new FrameLayout(this);
     layout.addView(body, new LinearLayout.LayoutParams(-1, 0, 1));
@@ -144,7 +149,7 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
     body.addView(scroll, new FrameLayout.LayoutParams(-1, -1));
     LinearLayout actions = new LinearLayout(this);
     actions.setOrientation(LinearLayout.VERTICAL);
-    actions.setPadding(dp(18), dp(16), dp(18), dp(8));
+    actions.setPadding(dp(20), dp(20), dp(20), dp(8));
     actions.setMinimumHeight(dp(400));
     scroll.addView(actions, new ScrollView.LayoutParams(-1, -1));
     arrivalButton = attendanceButton("출근");
@@ -163,7 +168,7 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
     menuPanel = new LinearLayout(this);
     menuPanel.setOrientation(LinearLayout.VERTICAL);
     menuPanel.setPadding(dp(14), dp(12), dp(14), dp(14));
-    menuPanel.setBackground(outline(BACKGROUND, 2));
+    menuPanel.setBackground(surface(Color.WHITE, Color.rgb(226, 232, 240), 1));
     menuPanel.setElevation(dp(12));
     menuPanel.setVisibility(View.GONE);
     menuPanel.setClickable(true);
@@ -200,7 +205,7 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
     button.setMinimumHeight(dp(120));
     button.setAutoSizeTextTypeUniformWithConfiguration(
         32, 52, 2, android.util.TypedValue.COMPLEX_UNIT_SP);
-    button.setBackground(outline(BACKGROUND, 4));
+    button.setBackground(surface("출근".equals(title) ? BLUE : RED, Color.TRANSPARENT, 0));
     button.setOnClickListener(v -> select(title));
     return button;
   }
@@ -210,7 +215,8 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
     button.setText(text);
     button.setTextColor(Color.WHITE);
     button.setTextSize(18);
-    button.setBackground(outline(BACKGROUND, 1));
+    button.setTextColor(INK);
+    button.setBackground(surface(Color.rgb(241, 245, 249), Color.TRANSPARENT, 0));
     LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, dp(52));
     params.topMargin = dp(8);
     menuPanel.addView(button, params);
@@ -241,6 +247,12 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
 
   private void select(String s) {
     closeMenu();
+    if (s.equals(selection)) {
+      selection = null;
+      selectedAt = 0;
+      message("선택이 해제됐습니다.\n출근 또는 퇴근을 선택하세요.");
+      return;
+    }
     selection = s;
     selectedAt = SystemClock.elapsedRealtime();
     message(s + " 선택됨\n30초 이내 태그하세요.");
@@ -251,10 +263,16 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
     if (arrivalButton != null) {
       arrivalButton.setSelected("출근".equals(selection));
       arrivalButton.setBackground(
-          outline(arrivalButton.isSelected() ? Color.rgb(60, 60, 60) : BACKGROUND, 4));
+          surface(
+              arrivalButton.isSelected() ? Color.rgb(29, 78, 216) : BLUE,
+              INK,
+              arrivalButton.isSelected() ? 3 : 0));
       departureButton.setSelected("퇴근".equals(selection));
       departureButton.setBackground(
-          outline(departureButton.isSelected() ? Color.rgb(60, 60, 60) : BACKGROUND, 4));
+          surface(
+              departureButton.isSelected() ? Color.rgb(185, 28, 28) : RED,
+              INK,
+              departureButton.isSelected() ? 3 : 0));
     }
   }
 
@@ -279,6 +297,7 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
     if (nfc != null) nfc.disableReaderMode(this);
     selection = null;
     registration = null;
+    if (arrivalButton.isSelected() || departureButton.isSelected()) message("출근 또는 퇴근을 선택하세요.");
   }
 
   public void onTagDiscovered(Tag tag) {

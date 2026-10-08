@@ -103,4 +103,25 @@ public class MainActivityTest {
     Shadows.shadowOf(android.os.Looper.getMainLooper()).idleFor(Duration.ofSeconds(32));
     assertNotNull(find(root(), "선택 시간이 지났습니다. 다시 선택하세요."));
   }
+
+  @Test
+  public void sameButtonCancelsAndOtherButtonSwitchesSelection() {
+    View arrival = find(root(), "출근");
+    View departure = find(root(), "퇴근");
+    arrival.performClick();
+    assertTrue(arrival.isSelected());
+    arrival.performClick();
+    assertFalse(arrival.isSelected());
+    assertNotNull(find(root(), "선택이 해제됐습니다.\n출근 또는 퇴근을 선택하세요."));
+    departure.performClick();
+    assertTrue(departure.isSelected());
+    departure.performClick();
+    assertFalse(departure.isSelected());
+    arrival.performClick();
+    departure.performClick();
+    assertFalse(arrival.isSelected());
+    assertTrue(departure.isSelected());
+    Shadows.shadowOf(android.os.Looper.getMainLooper()).idleFor(Duration.ofSeconds(32));
+    assertFalse(departure.isSelected());
+  }
 }

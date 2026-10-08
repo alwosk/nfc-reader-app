@@ -75,12 +75,12 @@ Tailscale 기기 승인·키 만료 정책에 따라 재로그인이 필요할 �
 
 = 공용폰에 앱 설치하기
 == 방법 A: APK 직접 설치
-+ `dist/attendance-v0.3.0.apk` 파일을 USB 파일 전송 등으로 공용폰의 Download 폴더에 복사합니다.
++ `dist/attendance-v0.3.1.apk` 파일을 USB 파일 전송 등으로 공용폰의 Download 폴더에 복사합니다.
 + 공용폰의 파일 앱에서 APK를 엽니다.
 + 요청되면 해당 파일 앱에 ‘알 수 없는 앱 설치’ 또는 ‘이 출처 허용’을 켭니다.
 + ‘설치’ 후 ‘출퇴근’을 엽니다. 설치 완료 후 출처 허용을 다시 꺼도 됩니다.
 
-이 배포는 실기기 시험용 v0.3.0입니다. APK 빌드는 확인하더라도 실제 NFC 인식·배터리 정책은 공용폰에서 시험해야 합니다. 운영 투입 전 마지막 장의 확인표를 완료하세요.
+이 배포는 실기기 시험용 v0.3.1입니다. APK 빌드는 확인하더라도 실제 NFC 인식·배터리 정책은 공용폰에서 시험해야 합니다. 운영 투입 전 마지막 장의 확인표를 완료하세요.
 
 == 방법 B: USB·ADB로 설치
 ADB는 PC에서 안드로이드 기기를 제어하는 도구입니다. 아래 단계를 차례대로 진행합니다.
@@ -94,7 +94,7 @@ ADB는 PC에서 안드로이드 기기를 제어하는 도구입니다. 아래 �
 ```powershell
 cd C:\platform-tools
 .\adb.exe devices
-.\adb.exe install -r "C:\AttendanceReceiver\dist\attendance-v0.3.0.apk"
+.\adb.exe install -r "C:\AttendanceReceiver\dist\attendance-v0.3.1.apk"
 ```
 `adb devices`의 기기 번호 옆에 `device`가 나오면 연결됐습니다. 설치 명령 끝에 `Success`가 나오면 성공입니다.
 
