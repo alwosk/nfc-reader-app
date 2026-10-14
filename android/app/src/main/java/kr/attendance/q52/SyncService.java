@@ -22,21 +22,25 @@ public class SyncService extends Service {
   static boolean validUrl(String value) {
     try {
       URL u = new URL(value);
-      String[] a = u.getHost().split("\\.");
+      String[] a = u.getHost().split("\\.", -1);
+      if (a.length != 4) return false;
+      int[] octets = new int[4];
+      for (int i = 0; i < 4; i++) {
+        if (!a[i].matches("0|[1-9][0-9]{0,2}")) return false;
+        octets[i] = Integer.parseInt(a[i]);
+        if (octets[i] > 255) return false;
+      }
+      boolean privateNetwork = octets[0] == 10
+          || (octets[0] == 172 && octets[1] >= 16 && octets[1] <= 31)
+          || (octets[0] == 192 && octets[1] == 168);
+      boolean tailscale = octets[0] == 100 && octets[1] >= 64 && octets[1] <= 127;
       return u.getProtocol().equals("http")
-          && a.length == 4
-          && Integer.parseInt(a[0]) == 100
-          && Integer.parseInt(a[1]) >= 64
-          && Integer.parseInt(a[1]) <= 127
-          && Integer.parseInt(a[2]) >= 0
-          && Integer.parseInt(a[2]) <= 255
-          && Integer.parseInt(a[3]) >= 0
-          && Integer.parseInt(a[3]) <= 255
+          && (privateNetwork || tailscale)
           && u.getUserInfo() == null
           && u.getQuery() == null
           && u.getRef() == null
           && (u.getPath().isEmpty() || u.getPath().equals("/"))
-          && u.getPort() > 0;
+          && u.getPort() > 0 && u.getPort() <= 65535;
     } catch (Exception e) {
       return false;
     }

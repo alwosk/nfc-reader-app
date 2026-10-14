@@ -5,7 +5,7 @@ import secrets
 import threading
 import tempfile
 from pathlib import Path
-from core import Pairing, Server, Store, tailscale_ip
+from core import Pairing, Server, Store, receiver_ip
 
 
 def data_folder():
@@ -49,8 +49,8 @@ class Receiver:
             self.config = updated
 
     def configure(self, host):
-        if not tailscale_ip(host):
-            raise ValueError('이 PC의 Tailscale IPv4 주소를 입력하세요.')
+        if not receiver_ip(host):
+            raise ValueError('이 PC의 내부망 또는 Tailscale IPv4 주소를 입력하세요.')
         with self.lock:
             self.config['host'] = host
             tmp = self.path.with_suffix('.tmp')
@@ -70,7 +70,7 @@ class Receiver:
                     threading.Thread(target=self.server.serve_forever, daemon=True).start()
                 except OSError:
                     self.server = None
-                    self.status = 'Tailscale 연결 대기 · 자동으로 다시 연결합니다.'
+                    self.status = '네트워크 연결 대기 · 자동으로 다시 연결합니다.'
             if self.server:
                 self.status = '백그라운드 수신 중'
         try:

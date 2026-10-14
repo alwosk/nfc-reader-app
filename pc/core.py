@@ -200,6 +200,19 @@ class Handler(BaseHTTPRequestHandler):
         except (ValueError,KeyError,TypeError): self.answer(400, {'error':'invalid request'})
         except Exception: self.answer(500, {'error':'storage failure; retry'})
 
+# Explicit ranges keep loopback, link-local and public addresses out.
+RECEIVER_NETWORKS = tuple(ipaddress.ip_network(value) for value in (
+    '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '100.64.0.0/10'))
+
+
+def receiver_ip(value):
+    try:
+        address = ipaddress.IPv4Address(value)
+        return any(address in network for network in RECEIVER_NETWORKS)
+    except (ValueError, TypeError):
+        return False
+
+
 def tailscale_ip(value):
     try: return ipaddress.ip_address(value) in ipaddress.ip_network('100.64.0.0/10')
     except ValueError: return False

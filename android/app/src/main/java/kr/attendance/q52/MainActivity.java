@@ -504,7 +504,7 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
   private void connection() {
     LinearLayout f = form();
     String oldUrl = SyncService.prefs(this).getString("url", "");
-    EditText url = field(f, "http://100.x.x.x:8765", oldUrl, false);
+    EditText url = field(f, "http://192.168.0.10:8765", oldUrl, false);
     EditText code = field(f, "PC에 표시된 숫자 6자리", "", false);
     code.setInputType(InputType.TYPE_CLASS_NUMBER);
     code.setFilters(new android.text.InputFilter[] {new android.text.InputFilter.LengthFilter(6)});
@@ -518,7 +518,7 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
             (d, w) -> {
               String u = url.getText().toString().trim(), c = code.getText().toString().trim();
               if (!SyncService.validUrl(u)) {
-                message("PC의 Tailscale 주소를 확인하세요.");
+                message("PC의 내부망 또는 Tailscale 주소와 포트를 확인하세요.");
                 return;
               }
               if (c.isEmpty()
@@ -553,7 +553,7 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
                           runOnUiThread(
                               () -> {
                                 if (!isDestroyed())
-                                  message("연결 실패. PC 주소·Tailscale 연결을 확인하고 새 코드를 발급해 다시 입력하세요.");
+                                  message("연결 실패. PC 주소·네트워크 연결을 확인하고 새 코드를 발급해 다시 입력하세요.");
                               });
                         }
                       })

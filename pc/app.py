@@ -10,6 +10,7 @@ import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from runtime import Receiver, data_folder
+from core import receiver_ip, tailscale_ip
 
 DATA = data_folder()
 
@@ -56,7 +57,7 @@ class App:
         box.pack(fill='both', expand=True)
         ttk.Label(box, text='근태 수신기', font=('', 22, 'bold')).pack(anchor='w')
         ttk.Label(box, text='창을 닫아도 수신합니다. 작업표시줄 알림 영역에서 다시 열 수 있습니다.').pack(anchor='w', pady=8)
-        ttk.Label(box, text='이 PC의 Tailscale IPv4 주소').pack(anchor='w')
+        ttk.Label(box, text='이 PC의 내부망 또는 Tailscale IPv4 주소').pack(anchor='w')
         self.host = tk.StringVar(value=self.receiver.config['host'])
         ttk.Entry(box, textvariable=self.host).pack(fill='x')
         row = ttk.Frame(box)
@@ -122,12 +123,39 @@ class App:
 
     def detect_ip(self):
         try:
-            exe = Path(os.environ.get('PROGRAMFILES', r'C:\Program Files')) / 'Tailscale/tailscale.exe'
-            r = subprocess.run([str(exe), 'ip', '-4'], capture_output=True, text=True,
-                               timeout=5, check=True, creationflags=subprocess.CREATE_NO_WINDOW)
-            self.host.set(r.stdout.strip().splitlines()[0])
+            # Query all connected IPv4 interfaces; no Internet or Tailscale required.
+            result = subprocess.run(
+                ['powershell', '-NoProfile', '-Command',
+                 "Get-NetIPAddress -AddressFamily IPv4 -AddressState Preferred | "
+                 "Select-Object -ExpandProperty IPAddress"],
+                capture_output=True, text=True, timeout=10, check=True,
+                creationflags=subprocess.CREATE_NO_WINDOW)
+            addresses = sorted({line.strip() for line in result.stdout.splitlines()
+                                if receiver_ip(line.strip())},
+                               key=lambda value: (tailscale_ip(value), value))
+            if not addresses:
+                raise ValueError('No supported IPv4 address')
+            if len(addresses) == 1:
+                self.host.set(addresses[0])
+                return
+            dialog = tk.Toplevel(self.root)
+            dialog.title('PC 주소 선택')
+            dialog.transient(self.root)
+            box = ttk.Frame(dialog, padding=16)
+            box.pack(fill='both', expand=True)
+            ttk.Label(box, text='공용폰과 연결된 네트워크의 주소를 선택하세요.').pack(pady=8)
+            selected = tk.StringVar(value=self.host.get() if self.host.get() in addresses else addresses[0])
+            for address in addresses:
+                label = 'Tailscale' if tailscale_ip(address) else '내부망'
+                ttk.Radiobutton(box, text=f'{address} ({label})',
+                                variable=selected, value=address).pack(anchor='w')
+            def choose():
+                self.host.set(selected.get())
+                dialog.destroy()
+            ttk.Button(box, text='선택', command=choose).pack(pady=8)
+            dialog.grab_set()
         except Exception:
-            messagebox.showerror('주소 확인', 'Tailscale 설치·로그인을 확인하거나 PC의 100.x.x.x 주소를 입력하세요.')
+            messagebox.showerror('주소 확인', '네트워크 연결을 확인하거나 ipconfig에 표시된 PC의 IPv4 주소를 직접 입력하세요.')
 
     def issue_code(self):
         if not self.receiver.server:
