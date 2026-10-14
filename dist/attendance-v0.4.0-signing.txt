@@ -1,0 +1,12 @@
+Application: kr.attendance.q52
+Version: 0.4.0 (versionCode 5)
+Build: debug; Android API 26+, target API 35
+Source: 77bb5c415e4f84d8a49064eeb21103097ad4f49d (merged to main in d67784631b3d953b7ef4dbae9c5178b254676bf9)
+Verified CI: https://github.com/alwosk/nfc-reader-app/actions/runs/38492387258
+Signing: persistent RSA 3072 key created 2026-10-14; APK v2/v3 verified
+Certificate SHA-256: 67c399418b0a17959cadc72a67071725f2510777fb3ab687f5eb51836e04fa2d
+
+The key differs from v0.3.1. An in-place v0.3.1 update is not supported.
+Uninstalling deletes phone-local records/settings. Preserve needed data first.
+Use this same private key for future v0.4.0 updates; never publish the key/password.
+The tested APK entries are unchanged; only signing metadata was replaced/added.
