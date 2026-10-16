@@ -5,10 +5,10 @@
 ## 다운로드 · 앱 v0.4.0 (내부망 연결 지원)
 
 - **[폰용 v0.4.0 APK 다운로드](https://github.com/alwosk/nfc-reader-app/raw/refs/heads/main/dist/attendance-v0.4.0.apk)** — 새 서명 키로 서명한 설치 파일.
-- PC는 최신 [pc 폴더](pc)를 사용하거나 [검증된 빌드의 Windows 수신기 ZIP](https://github.com/alwosk/nfc-reader-app/actions/runs/38492387258)에서 `windows-receiver-v0.4.0`을 받으세요. 기존 v0.3.0 수신기는 내부망 연결을 지원하지 않습니다.
+- **[Windows 수신기 v0.4.0 ZIP 다운로드](https://github.com/alwosk/nfc-reader-app/raw/refs/heads/main/dist/windows-receiver-v0.4.0.zip)** — 압축 해제 후 `pc/install.cmd` → `pc/start.cmd`. Python 3.12 이상이 필요합니다. 기존 v0.3.0 수신기는 내부망 연결을 지원하지 않습니다.
 - [파일 SHA-256](dist/SHA256SUMS.txt)
 
-**기존 v0.3.1이 설치된 폰에는 이 APK를 덮어 설치할 수 없습니다.** 두 APK의 서명이 다릅니다. 기존 앱을 삭제하면 직원 등록·근태 기록이 지워질 수 있으므로 삭제하지 마세요. v0.3.1에서 전환하려면 PC 전송·데이터 보존 여부를 먼저 확인하고 기존 앱을 삭제한 뒤 새로 설치해야 합니다. 폰의 직원·태그 등록과 연결 설정은 다시 해야 합니다. 앞으로 v0.4.0 위에 업데이트할 때는 이번에 만든 동일한 서명 키를 사용합니다.
+**기존 v0.3.1이 설치된 폰에는 이 APK를 덮어 설치할 수 없습니다.** 두 APK의 서명이 다릅니다. 기존 앱을 삭제하면 폰의 직원 등록·근태 기록이 지워지므로 먼저 필요한 데이터를 보존하세요. v0.3.1에서 전환하려면 PC 전송·데이터 보존 여부를 먼저 확인하고 기존 앱을 삭제한 뒤 새로 설치해야 합니다. 폰의 직원·태그 등록과 연결 설정은 다시 해야 합니다. 앞으로 v0.4.0 위에 업데이트할 때는 이번에 만든 동일한 서명 키를 사용합니다.
 
 이 APK는 [빌드·lint·테스트를 통과한 CI 결과물](https://github.com/alwosk/nfc-reader-app/actions/runs/38492387258)을 별도의 고정 서명 키로 다시 서명한 파일입니다. 앱 자체는 debug 빌드입니다. 파일을 main에 보관하므로 Actions 아티팩트를 찾지 않고 위 링크에서 받을 수 있습니다.
 
@@ -32,7 +32,7 @@
 
 ## 기존 배포본 · 앱 v0.3.1 (Tailscale 전용)
 
-비공개 저장소에서 **Code → Download ZIP**으로 전체를 받거나 아래 파일을 다운로드하세요.
+아래 파일은 이전 버전 보관용입니다. 내부망 연결에는 위 v0.4.0 APK와 수신기 ZIP을 받으세요. 기존 PDF도 이전 버전 기준이며, v0.4.0 설치는 위 안내를 따르세요.
 
 - [공용폰 설치용 APK](dist/attendance-v0.3.1.apk)
 - [Windows 근태 수신기](dist/windows-receiver-v0.3.0.zip) — Python 3.12 이상, 3.14 지원. `install.cmd` → `start.cmd`
